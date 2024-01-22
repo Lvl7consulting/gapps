@@ -678,6 +678,16 @@ def get_framework(fid):
     result = Authorizer(current_user).can_user_read_framework(fid)
     return jsonify(result["extra"]["framework"].as_dict())
 
+@api.route('/frameworks/<int:fid>', methods=['PUT'])
+@login_required
+def update_framework(fid):
+    result = Authorizer(current_user).can_user_manage_framework(fid)
+    data = request.get_json()
+    result["extra"]["framework"].name = data["name"]
+    result["extra"]["framework"].description = data["description"]
+    db.session.commit()
+    return jsonify(result["extra"]["framework"].as_dict())
+
 @api.route('/evidence/<int:eid>', methods=['GET'])
 @login_required
 def get_evidence(eid):
