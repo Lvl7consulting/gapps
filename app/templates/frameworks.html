@@ -6,30 +6,32 @@
   {{ macro.filehelper(datatables=True) }}
 {% endblock %}
 
-{%block page_header_title%}Frameworks{%endblock%}
-{%block page_header_title_border%}{%endblock%}
+{% block page_header_title %}Frameworks{% endblock %}
+{% block page_header_title_border %}{% endblock %}
+{% block page_header_buttons %}<button class="btn btn-sm modal-button btn-primary">New</button>{% endblock %}
 
-{%block content%}
+{% block content %}
 <div class="grid grid-cols-6 gap-4">
   <div class="col-span-6">
     <div class="card bg-base-100 border border-base-200">
       <div class="card-body">
         <h2 class="card-title mb-4">Frameworks</h2>
-              <table class="table table-vcenter" id="frameworks" style="width:100%">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th class="w-1">Controls</th>
-                    <th class="w-1">View</th>
-                  </tr>
-                </thead>
-                <tbody id="framework-body"></tbody>
-              </table>
+        <table class="table table-vcenter" id="frameworks" style="width:100%">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th class="w-1">Controls</th>
+              <th class="w-1">View</th>
+            </tr>
+          </thead>
+          <tbody id="framework-body"></tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
 
+{#
 <input type="checkbox" id="edit-framework-modal" class="modal-toggle" />
 <label for="edit-framework-modal" class="modal cursor-pointer">
   <label class="modal-box relative w-11/12 max-w-5xl" for="">
@@ -50,44 +52,43 @@
         </div>
   </label>
 </label>
+#}
 
-<input type="checkbox" id="add-framework-modal" class="modal-toggle" />
-<label for="add-framework-modal" class="modal cursor-pointer">
+<input type="checkbox" id="framework-modal" class="modal-toggle" />
+<label for="framework-modal" class="modal cursor-pointer">
   <label class="modal-box relative w-11/12 max-w-5xl" for="">
-    <h3 class="text-lg font-bold">Add framework</h3>
-        <div class="py-4 sm:mt-0">
-          <div class="md:grid md:grid-cols-1 md:gap-6">
-                <div class="mt-5 md:col-span-2 md:mt-0">
-                    <div class="overflow-hidden sm:rounded-md">
-                          <div class="px-4 py-5 sm:p-6">
-                                <div class="grid grid-cols-6 gap-6">
-                                  <div class="col-span-3 sm:col-span-3">
-                                        <label class="block text-sm font-medium ">Name</label>
-                                        <input placeholder="Enter the name of the framework" type="text" name="name" id="name" class="mt-3 border block w-full rounded-md border-base-300 shadow-sm input-md">
-                                  </div>
-                                  <div class="col-span-3 sm:col-span-3">
-                                        <label class="block text-sm font-medium ">Contact Email</label>
-                                        <input type="text" name="contact" id="contact" class="mt-3 border block w-full rounded-md border-base-300 shadow-sm input-md">
-                                  </div>
-                                </div>
-                          </div>
-                          <div class="px-4 py-3 text-right sm:px-6">
-                                <button class="btn btn-primary save-framework-btn">Save</button>
-                          </div>
-                    </div>
+    <h3 class="text-lg font-bold">Create a new framework</h3>
+      <div class="py-4 sm:mt-0">
+        <div class="md:grid md:grid-cols-1 md:gap-6">
+          <div class="mt-5 md:col-span-2 md:mt-0">
+            <div class="overflow-hidden sm:rounded-md">
+              <div class="px-4 py-5 sm:p-6">
+                <div class="grid grid-cols-6 gap-6">
+                  <div class="col-span-3 sm:col-span-3">
+                    <label class="block text-sm font-medium">Name</label>
+                    <input placeholder="Enter the name of the framework" type="text" name="name" id="name" class="mt-3 border block w-full rounded-md border-base-300 shadow-sm input-md">
+                  </div>
                 </div>
+              </div>
+              <div class="px-4 py-3 text-right sm:px-6">
+                <button class="btn btn-primary create-framework">Save</button>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
   </label>
 </label>
-{%endblock%}
+{% endblock %}
 
-{%block extrajs%}
+{% block extrajs %}
 <script>
-  function loadFrameworkTable() {
+  $(document).ready(function() {
+    function loadFrameworkTable() {
       $("#frameworks").dataTable().fnDestroy();
       $("#framework-body").html("")
       var selectedTenant = getTenant();
+
       $.ajax({
         type: "GET",
         url: `/api/v1/tenants/${selectedTenant.id}/frameworks`,
@@ -95,18 +96,52 @@
         dataType: "json",
         success: function(data){
           for (var framework in data) {
-            $("#framework-body").append(`<tr><td class="text-sm font-medium  uppercase">${clean(data[framework].name)}</td><td class="text-sm font-medium ">${data[framework].controls}</td><td class="text-center"><a href="/frameworks/${clean(data[framework].name)}" class="btn btn-xs">View</a></td></tr>`);
+            $("#framework-body").append(
+              `<tr>
+                <td class="text-sm font-medium uppercase">${clean(data[framework].name)}</td>
+                <td class="text-sm font-medium">${data[framework].controls}</td>
+                <td class="text-center"><a href="/frameworks/${clean(data[framework].id)}" class="btn btn-xs">View</a></td>
+              </tr>`
+            );
           }
-          $('#frameworks').DataTable({"pageLength":25,"order": [[ 0, "desc" ]]});
+          $('#frameworks').DataTable({"pageLength": 25,"order": [[ 0, "desc" ]]});
           return(data)
         },
         error: function(errMsg) {
           toast(errMsg["responseJSON"]["message"],"error")
           return(errMsg);
         }
-      })
+      });
+    }
+    loadFrameworkTable();
 
-  }
-  loadFrameworkTable()
+    $(document).on('click', '.modal-button', function() {
+      document.getElementById('framework-modal').checked = true;
+    });
+
+    $(document).on('click', '.create-framework', function() {
+     var data = {
+       "name": $("#name").val()
+     };
+     var selectedTenant = getTenant();
+
+     $.ajax({
+       type: "POST",
+       url: `/api/v1/tenants/${selectedTenant.id}/frameworks`,
+       data: JSON.stringify(data),
+       contentType: "application/json; charset=utf-8",
+       dataType: "json",
+       success: function(data){
+         toast("Added framework")
+         document.getElementById('framework-modal').checked = false;
+         loadFrameworkTable()
+         return(data)
+       },
+       error: function(errMsg) {
+         return(errMsg);
+       }
+     });
+    });
+  });
 </script>
 {% endblock %}

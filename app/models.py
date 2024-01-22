@@ -732,7 +732,7 @@ class Framework(LogMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     uuid = db.Column(db.String,  default=lambda: uuid4().hex, unique=True)
     name = db.Column(db.String(), nullable=False)
-    descriptionn = db.Column(db.String(), nullable=False)
+    description = db.Column(db.String(), nullable=False)
     reference_link = db.Column(db.String())
     guidance = db.Column(db.String)
     """framework specific features"""
@@ -791,6 +791,17 @@ class Framework(LogMixin, db.Model):
         if not hasattr(self, name):
             return False
         return getattr(self, name)
+
+    def has_control(self, control_id):
+        return self.controls.filter(Control.id == control_id).first()
+
+    def add_control(self, control_id):
+        if not (control := Control.query.get(control_id)):
+            return False
+
+        self.controls.append(control)
+        db.session.commit()
+        return True
 
 class Policy(LogMixin, db.Model):
     __tablename__ = 'policies'

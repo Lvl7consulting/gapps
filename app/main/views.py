@@ -51,12 +51,14 @@ def render_questionnaire(qid):
 def frameworks():
     return render_template("frameworks.html")
 
-@main.route('/frameworks/<string:name>', methods=['GET'])
+@main.route('/frameworks/<int:fid>', methods=['GET'])
 @login_required
-def view_framework(name):
-    framework = Framework.query.filter(func.lower(Framework.name) == func.lower(name)).first()
+def view_framework(fid):
+    result = Authorizer(current_user).can_user_manage_framework(fid)
+    framework = result["extra"]["framework"]
+    controls = framework.tenant.controls.all()
     return render_template("view_framework.html",
-        framework=framework)
+        framework=framework,controls=controls)
 
 @main.route('/evidence', methods=['GET'])
 @login_required
