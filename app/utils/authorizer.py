@@ -184,6 +184,13 @@ class Authorizer:
             return self.return_response(True, AUTHORIZED_MSG, 200, framework=framework)
         return self.return_response(False, UNAUTHORIZED_MSG, 403)
 
+    def can_user_manage_framework(self, framework):
+        if not (framework := self.id_to_obj("Framework", framework)):
+            return self.return_response(False, "framework not found", 404)
+        if self._can_user_manage_tenant(framework.tenant):
+            return self.return_response(True, AUTHORIZED_MSG, 200, framework=framework)
+        return self.return_response(False, UNAUTHORIZED_MSG, 403)
+
     # tenant evidence
     def can_user_manage_evidence(self, evidence):
         if not (evidence := self.id_to_obj("Evidence", evidence)):

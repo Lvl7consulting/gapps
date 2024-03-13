@@ -189,6 +189,19 @@ def get_bg_jobs(id):
         )
         return jsonify(jobs)
 
+@api.route('/tenants/<int:tid>/frameworks', methods=['POST'])
+@login_required
+def create_framework_for_tenant(tid):
+    result = Authorizer(current_user).can_user_manage_tenant(tid)
+    if not result:
+        return jsonify({"message": "failed to create framework"}), 400
+
+    payload = request.get_json()
+    models.Framework.create(name=payload["name"],
+        tenant=result["extra"]["tenant"])
+
+    return jsonify({"message": "ok"})
+
 @api.route('/tenants/<int:id>/frameworks', methods=['GET'])
 @login_required
 def get_frameworks(id):
@@ -678,6 +691,16 @@ def get_framework(fid):
     result = Authorizer(current_user).can_user_read_framework(fid)
     return jsonify(result["extra"]["framework"].as_dict())
 
+@api.route('/frameworks/<int:fid>', methods=['PUT'])
+@login_required
+def update_framework(fid):
+    result = Authorizer(current_user).can_user_manage_framework(fid)
+    data = request.get_json()
+    result["extra"]["framework"].name = data["name"]
+    result["extra"]["framework"].description = data["description"]
+    db.session.commit()
+    return jsonify(result["extra"]["framework"].as_dict())
+
 @api.route('/evidence/<int:eid>', methods=['GET'])
 @login_required
 def get_evidence(eid):
@@ -865,6 +888,22 @@ def update_controls_for_policy(pid, cid):
 @login_required
 def delete_controls_for_policy(pid, cid):
     result = Authorizer(current_user).can_user_manage_project_policy(pid)
+    if control := result["extra"]["policy"].has_control(cid):
+        db.session.delete(control)
+        db.session.commit()
+    return jsonify({"message": "ok"})
+
+@api.route('/frameworks/<int:fid>/controls/<int:cid>', methods=['PUT'])
+@login_required
+def update_controls_for_framework(fid, cid):
+    result = Authorizer(current_user).can_user_manage_framework(fid)
+    result["extra"]["framework"].add_control(cid)
+    return jsonify({"message": "ok"})
+
+@api.route('/frameworks/<int:fid>/controls/<int:cid>', methods=['DELETE'])
+@login_required
+def delete_controls_for_framework(fid, cid):
+    result = Authorizer(current_user).can_user_manage_project_policy(fid)
     if control := result["extra"]["policy"].has_control(cid):
         db.session.delete(control)
         db.session.commit()
