@@ -7,6 +7,7 @@ services:
       - ".:/app"
     depends_on:
       - postgres
+      - neo4j
     networks:
       - db_nw
       - web_nw
@@ -14,23 +15,31 @@ services:
       - "5000:5000"
     restart: unless-stopped
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER:-db1}:${POSTGRES_PASSWORD:-db1}@${POSTGRES_HOST:-postgres}/${POSTGRES_DB:-db1}
       - DEFAULT_EMAIL=${DEFAULT_EMAIL:-admin@example.com}
       - DEFAULT_PASSWORD=${DEFAULT_PASSWORD:-admin}
       - RESET_DB=${RESET_DB:-no}
       - DOC_LINK=https://github.com/bmarsh9/gapps
       - VERSION=${VERSION:-3.5.3}
       - APP_NAME=Gapps
+      # Postgres db config
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER:-db1}:${POSTGRES_PASSWORD:-db1}@${POSTGRES_HOST:-postgres}/${POSTGRES_DB:-db1}
       - POSTGRES_USER=${POSTGRES_USER:-db1}
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-db1}
       - POSTGRES_DB=${POSTGRES_DB:-db1}
+      # Neo4j db config
+      - NEOMODEL_DATABASE_URI=bolt://${NEO4J_USER:-neo4j}:${NEO4J_PASSWORD:-password}@${NEO4J_HOST:-neo4j}/${NEO4J_DB:-neo4j}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_HOST=${NEO4J_HOST:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
+      - NEO4J_DB=${NEO4J_DB:-neo4j}
       - GUNICORN_WORKERS=2
   gapps-worker:
     image: gapps-worker
     build: .
     depends_on:
       - postgres
+      - neo4j
     networks:
       - db_nw
       - web_nw
@@ -38,14 +47,21 @@ services:
     #  - "5000:5000"
     restart: unless-stopped
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER:-db1}:${POSTGRES_PASSWORD:-db1}@${POSTGRES_HOST:-postgres}/${POSTGRES_DB:-db1}
       - VERSION=${VERSION:-3.5.3}
       - APP_NAME=Gapps
       - AS_WORKER=yes
+      # Postgres db config
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER:-db1}:${POSTGRES_PASSWORD:-db1}@${POSTGRES_HOST:-postgres}/${POSTGRES_DB:-db1}
       - POSTGRES_USER=${POSTGRES_USER:-db1}
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-db1}
       - POSTGRES_DB=${POSTGRES_DB:-db1}
+      # Neo4j db config
+      - NEOMODEL_DATABASE_URI=bolt://${NEO4J_USER:-neo4j}:${NEO4J_PASSWORD:-password}@${NEO4J_HOST:-neo4j_DB:-neo4j}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_HOST=${NEO4J_HOST:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
+      - NEO4J_DB=${NEO4J_DB:-neo4j}
       - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-1}
       - WORKER_LOG_LEVEL=DEBUG
   postgres:
@@ -56,18 +72,33 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db1}
       POSTGRES_DB: ${POSTGRES_DB:-db1}
       PGDATA: /data/postgres
-    #volumes:
+    # volumes:
     #   - postgres:/data/postgres
-    #ports:
-    #  - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     networks:
       - db_nw
+    restart: unless-stopped
+  neo4j:
+    container_name: neo4j
+    image: neo4j:5.15.0 # version 5.15 because compatibility with n10s plugin
+    environment:
+      - NEO4J_PLUGINS=[apoc, n10s, graph-data-science]
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password}
+    networks:
+      - db_nw
+    # volumes:
+    #   - 
+    ports:
+      - "7474:7474"
+      - "7687:7687"
     restart: unless-stopped
 
 networks:
   db_nw:
     driver: bridge
   web_nw:
-    driver: bridge
+   driver: bridge
+
 volumes:
   dbdata:
