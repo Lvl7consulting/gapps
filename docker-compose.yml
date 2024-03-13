@@ -1,8 +1,8 @@
 version: '3'
 services:
   gapps:
-    container_name: gapps
-    image: bmarsh13/gapps:3.5.3
+    image: gapps
+    build: .
     volumes:
       - ".:/app"
     depends_on:
@@ -27,8 +27,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-db1}
       - GUNICORN_WORKERS=2
   gapps-worker:
-    container_name: gapps-worker
-    image: bmarsh13/gapps:3.5.3
+    image: gapps-worker
+    build: .
     depends_on:
       - postgres
     networks:
