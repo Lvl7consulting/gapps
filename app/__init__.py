@@ -6,11 +6,15 @@ from config import config
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_babel import Babel, lazy_gettext as _l
+from neomodel import db as Neomodel
+from neomodel import config as NeomodelConfig
 import logging
 import json
 
 
 db = SQLAlchemy()
+from neomodel import db as neo_db
+from neomodel import config as neo_config
 babel = Babel()
 migrate = Migrate()
 mail = Mail()
@@ -29,6 +33,7 @@ def create_app(config_name="default"):
     )
 
     configure_models(app)
+    configure_neomodels(app)
     registering_blueprints(app)
     configure_extensions(app)
 
@@ -93,6 +98,14 @@ def configure_models(app):
     app.db = db
     return
 
+def configure_neomodels(app):
+    # LVL7 TODO: find a better way to initialize the neo4j database
+    import os
+    neo_config.DATABASE_URL = os.environ["NEOMODEL_DATABASE_URI"]
+    app.neo_db = neo_db
+    app.neo_config = neo_config
+    return
+
 def configure_extensions(app):
     db.init_app(app)
     mail.init_app(app)
@@ -107,6 +120,9 @@ def registering_blueprints(app):
 
     from app.api_v1 import api as api_v1_blueprint
     app.register_blueprint(api_v1_blueprint, url_prefix='/api/v1')
+
+    from app.api_v2 import api as api_v2_blueprint
+    app.register_blueprint(api_v2_blueprint, url_prefix='/api/v2')
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
