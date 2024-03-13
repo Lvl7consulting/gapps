@@ -3,6 +3,8 @@ services:
   gapps:
     container_name: gapps
     image: bmarsh13/gapps:3.5.3
+    volumes:
+      - ".:/app"
     depends_on:
       - postgres
     networks:
